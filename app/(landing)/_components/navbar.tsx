@@ -3,19 +3,48 @@ import Logo from "./logo";
 import { cn } from "@/lib/utils";
 import { useScrollTop } from "@/hooks/use-scroll-top";
 import { ModeToggle } from "@/components/mode-toggle";
+import { useConvexAuth } from "convex/react";
+import { Button } from "@/components/ui/button";
+import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { Spinner } from "@/components/loader";
+import Link from "next/link";
 
 const Navbar = () => {
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const scrolled = useScrollTop();
 
   return (
-    <div className={cn(
+    <div
+      className={cn(
         "z-50 bg-background dark:bg-[#1F1F1F] fixed top-0 flex items-center w-full p-6",
-        scrolled && "border-b shadow-sm"
-    )}>
-        <Logo />
-        <div className="md:ml-auto md:justify-end justify-between w-full flex items-center gap-x-2">
-            <ModeToggle />
-        </div>
+        scrolled && "border-b shadow-sm",
+      )}
+    >
+      <Logo />
+      <div className="md:ml-auto md:justify-end justify-between w-full flex items-center gap-x-2">
+        {isLoading && <Spinner />}
+        {!isAuthenticated && !isLoading && (
+          <>
+            <SignInButton>
+              <Button variant="ghost" size="sm">
+                Log in
+              </Button>
+            </SignInButton>
+            <SignUpButton>
+              <Button size="sm">Get Lotion free</Button>
+            </SignUpButton>
+          </>
+        )}
+        {isAuthenticated && !isLoading && (
+          <>
+            <Button variant="ghost" size="sm">
+              <Link href="/documents">Enter Lotion</Link>
+            </Button>
+            <UserButton />
+          </>
+        )}
+        <ModeToggle />
+      </div>
     </div>
   );
 };
