@@ -14,12 +14,15 @@ import {
 import { useMediaQuery } from "usehooks-ts";
 import { cn } from "@/lib/utils";
 import UserItem from "./user-item";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 const Navigation = () => {
   const pathname = usePathname();
   const isMobile = useMediaQuery(
     "(max-width: 768px)",
   );
+  const documents = useQuery(api.notes.getNote);
 
   const isResizing = useRef(false);
   const sidebarRef =
@@ -181,7 +184,11 @@ const Navigation = () => {
           <UserItem />
         </div>
         <div className="mt-4">
-          <p>Documents</p>
+          {documents?.map((document) => (
+            <div key={document._id}>
+              <p>{document.title}</p>
+            </div>
+          ))}
         </div>
         <div
           className="opacity-0 group-hover/sidebar:opacity-100 transition cursor-ew-resize absolute h-full w-1 bg-primary/10 right-0 top-0"
