@@ -13,6 +13,7 @@ import {
 } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { cn } from "@/lib/utils";
+import UserItem from "./user-item";
 
 const Navigation = () => {
   const pathname = usePathname();
@@ -177,7 +178,7 @@ const Navigation = () => {
           />
         </div>
         <div>
-          <p>Action items </p>
+          <UserItem />
         </div>
         <div className="mt-4">
           <p>Documents</p>
