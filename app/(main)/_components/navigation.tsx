@@ -1,38 +1,27 @@
 "use client";
 
-import {
-  ChevronsLeft,
-  MenuIcon,
-} from "lucide-react";
+import { ChevronsLeft, MenuIcon, PlusCircle, SearchIcon, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
-import {
-  ComponentRef,
-  useRef,
-  useEffect,
-  useState,
-} from "react";
+import { ComponentRef, useRef, useEffect, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { cn } from "@/lib/utils";
 import UserItem from "./user-item";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import SidebarItem from "./sidebar-item";
+import { toast } from "sonner";
 
 const Navigation = () => {
   const pathname = usePathname();
-  const isMobile = useMediaQuery(
-    "(max-width: 768px)",
-  );
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const documents = useQuery(api.notes.getNote);
+  const createNewNote = useMutation(api.notes.createNewNote);
 
   const isResizing = useRef(false);
-  const sidebarRef =
-    useRef<ComponentRef<"aside">>(null);
-  const navbarRef =
-    useRef<ComponentRef<"div">>(null);
-  const [isCollapsed, setIsCollapsed] =
-    useState(isMobile);
-  const [isResetting, setIsResetting] =
-    useState(false);
+  const sidebarRef = useRef<ComponentRef<"aside">>(null);
+  const navbarRef = useRef<ComponentRef<"div">>(null);
+  const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     if (isMobile) {
@@ -40,7 +29,7 @@ const Navigation = () => {
     } else {
       resetWidth();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile]);
 
   useEffect(() => {
@@ -49,29 +38,16 @@ const Navigation = () => {
     }
   }, [pathname, isMobile]);
 
-  const handleMouseDown = (
-    e: React.MouseEvent<
-      HTMLDivElement,
-      MouseEvent
-    >,
-  ) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.preventDefault();
     e.stopPropagation();
 
     isResizing.current = true;
-    document.addEventListener(
-      "mousemove",
-      handleMouseMove,
-    );
-    document.addEventListener(
-      "mouseup",
-      handleMouseUp,
-    );
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
   };
 
-  const handleMouseMove = (
-    e: MouseEvent,
-  ) => {
+  const handleMouseMove = (e: MouseEvent) => {
     if (!isResizing.current) return;
     e.preventDefault();
     e.stopPropagation();
@@ -80,16 +56,10 @@ const Navigation = () => {
     newWidth = Math.max(240, newWidth);
     newWidth = Math.min(480, newWidth);
 
-    if (
-      sidebarRef.current &&
-      navbarRef.current
-    ) {
+    if (sidebarRef.current && navbarRef.current) {
       sidebarRef.current.style.width = `${newWidth}px`;
       // Keep the navbar in sync with the sidebar
-      navbarRef.current.style.setProperty(
-        "left",
-        `${newWidth}px`,
-      );
+      navbarRef.current.style.setProperty("left", `${newWidth}px`);
       navbarRef.current.style.setProperty(
         "width",
         `calc(100% - ${newWidth}px)`,
@@ -99,34 +69,19 @@ const Navigation = () => {
 
   const handleMouseUp = () => {
     isResizing.current = false;
-    document.removeEventListener(
-      "mousemove",
-      handleMouseMove,
-    );
-    document.removeEventListener(
-      "mouseup",
-      handleMouseUp,
-    );
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
   };
 
   const resetWidth = () => {
-    if (
-      sidebarRef.current &&
-      navbarRef.current
-    ) {
+    if (sidebarRef.current && navbarRef.current) {
       setIsCollapsed(false);
       setIsResetting(true);
-      sidebarRef.current.style.width =
-        isMobile ? "100%" : "240px";
-      navbarRef.current.style.setProperty(
-        "left",
-        isMobile ? "100%" : "240px",
-      );
+      sidebarRef.current.style.width = isMobile ? "100%" : "240px";
+      navbarRef.current.style.setProperty("left", isMobile ? "100%" : "240px");
       navbarRef.current.style.setProperty(
         "width",
-        isMobile
-          ? "0"
-          : "calc(100% - 240px)",
+        isMobile ? "0" : "calc(100% - 240px)",
       );
     }
     setTimeout(() => {
@@ -135,26 +90,28 @@ const Navigation = () => {
   };
 
   const collapse = () => {
-    if (
-      sidebarRef.current &&
-      navbarRef.current
-    ) {
+    if (sidebarRef.current && navbarRef.current) {
       setIsCollapsed(true);
       setIsResetting(true);
-      sidebarRef.current.style.width =
-        "0";
-      navbarRef.current.style.setProperty(
-        "left",
-        "0",
-      );
-      navbarRef.current.style.setProperty(
-        "width",
-        "100%",
-      );
+      sidebarRef.current.style.width = "0";
+      navbarRef.current.style.setProperty("left", "0");
+      navbarRef.current.style.setProperty("width", "100%");
       setTimeout(() => {
         setIsResetting(false);
       }, 300);
     }
+  };
+
+  const handleCreateNewNote = () => {
+    const promise = createNewNote({
+      title: "Untitled",
+    });
+
+    toast.promise(promise, {
+      loading: "Creating new note...",
+      success: "Note created successfully",
+      error: "Failed to create a new note",
+    });
   };
 
   return (
@@ -163,8 +120,7 @@ const Navigation = () => {
         ref={sidebarRef}
         className={cn(
           "group/sidebar h-full bg-secondary overflow-y-auto relative flex w-60 flex-col z-[99999]",
-          isResetting &&
-            "transition-all ease-in-out duration-300",
+          isResetting && "transition-all ease-in-out duration-300",
           isMobile && "w-0",
         )}
       >
@@ -175,13 +131,26 @@ const Navigation = () => {
             isMobile && "opacity-100",
           )}
         >
-          <ChevronsLeft
-            className="h-6 w-6"
-            onClick={collapse}
-          />
+          <ChevronsLeft className="h-6 w-6" onClick={collapse} />
         </div>
         <div>
           <UserItem />
+          <SidebarItem
+            onClick={() => {}}
+            icon={SearchIcon}
+            label="Search"
+            isSearch={true}
+          />
+          <SidebarItem
+            onClick={() => {}}
+            icon={Settings}
+            label="Settings"
+          />
+          <SidebarItem
+            onClick={handleCreateNewNote}
+            icon={PlusCircle}
+            label="New Page"
+          />
         </div>
         <div className="mt-4">
           {documents?.map((document) => (
@@ -201,8 +170,7 @@ const Navigation = () => {
         ref={navbarRef}
         className={cn(
           "absolute top-0 z-[99999] left-60 w-calc(100% - 240px)",
-          isResetting &&
-            "transition-all ease-in-out duration-300",
+          isResetting && "transition-all ease-in-out duration-300",
           isMobile && "left-0 w-full",
         )}
       >
