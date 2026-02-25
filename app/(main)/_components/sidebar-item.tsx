@@ -1,6 +1,12 @@
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronsRight, LucideIcon } from "lucide-react";
+import { ChevronDown, ChevronsRight, LucideIcon, Plus } from "lucide-react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface ItemProps {
   id?: Id<"notes">;
@@ -28,6 +34,37 @@ const SidebarItem = ({
   onExpand,
 }: ItemProps) => {
   const ChevronIcon = expanded ? ChevronDown : ChevronsRight;
+  const createNewNote = useMutation(api.notes.createNewNote);
+  const router = useRouter();
+
+  const handleExpand = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
+    onExpand?.();
+  };
+
+  const handleCreate = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
+    if (!id) return;
+
+    const promise = createNewNote({
+      title: "Untitled",
+      parentNote: id,
+    }).then((noteId) => {
+      if (!noteId) return;
+
+      if (!expanded) {
+        onExpand?.();
+      }
+
+      // router.push(`/notes/${noteId}`);
+    });
+
+    toast.promise(promise, {
+      loading: "Creating new note...",
+      success: "Note created successfully",
+      error: "Failed to create a new note",
+    });
+  };
 
   return (
     <div
@@ -43,7 +80,7 @@ const SidebarItem = ({
         <div
           role="button"
           className="h-full rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 mr-1"
-          onClick={onExpand}
+          onClick={handleExpand}
         >
           <ChevronIcon className="h-4 w-4 shrink-0 text-muted-foreground/50" />
         </div>
@@ -59,6 +96,35 @@ const SidebarItem = ({
           <span className="text-xs">Ctrl +</span>K
         </kbd>
       )}
+      {!!id && (
+        <div className="ml-auto flex items-center gap-x-2">
+          <div
+            className="opacity-0 group-hover/sidebar:opacity-100 h-full ml-auto rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600"
+            role="button"
+            onClick={handleCreate}
+          >
+            <Plus className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+SidebarItem.Skeleton = function SidebarItemSkeleton({
+  level,
+}: {
+  level: number;
+}) {
+  return (
+    <div
+      style={{
+        paddingLeft: level ? `${level * 12 + 25}px` : "12px",
+      }}
+      className="flex gap-x-2 py-[3px]"
+    >
+      <Skeleton className="h-4 w-4" />
+      <Skeleton className="h-4 w[30%]" />
     </div>
   );
 };

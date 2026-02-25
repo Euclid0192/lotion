@@ -25,7 +25,7 @@ export const createNewNote = mutation({
     });
 
     return note;
-  } 
+  },
 });
 
 export const getNote = query({
@@ -39,5 +39,31 @@ export const getNote = query({
     const documents = await ctx.db.query("notes").collect();
 
     return documents;
-  }
+  },
+});
+
+export const getSidebar = query({
+  args: {
+    parentNote: v.optional(v.id("notes")),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const userId = identity.subject;
+
+    const documents = await ctx.db
+      .query("notes")
+      .withIndex("by_user_parent", (q) =>
+        q.eq("userId", userId).eq("parentNote", args.parentNote),
+      )
+      .filter((q) => q.eq(q.field("isArchived"), false))
+      .order("desc") // default order by creation time
+      .collect();
+
+    return documents;
+  },
 });
