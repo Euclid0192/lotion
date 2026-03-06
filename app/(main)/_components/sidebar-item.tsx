@@ -1,12 +1,26 @@
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronsRight, LucideIcon, Plus } from "lucide-react";
+import {
+  Archive,
+  ChevronDown,
+  ChevronRight,
+  LucideIcon,
+  MoreHorizontal,
+  Plus,
+  Trash,
+} from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useUser } from "@clerk/nextjs";
 
 interface ItemProps {
   id?: Id<"notes">;
@@ -33,9 +47,11 @@ const SidebarItem = ({
   level = 0,
   onExpand,
 }: ItemProps) => {
-  const ChevronIcon = expanded ? ChevronDown : ChevronsRight;
+  const ChevronIcon = expanded ? ChevronDown : ChevronRight;
   const createNewNote = useMutation(api.notes.createNewNote);
-  const router = useRouter();
+  const { user } = useUser();
+  const archiveNote = useMutation(api.notes.archiveNote);
+  const deleteNote = useMutation(api.notes.deleteNote);
 
   const handleExpand = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.stopPropagation();
@@ -63,6 +79,31 @@ const SidebarItem = ({
       loading: "Creating new note...",
       success: "Note created successfully",
       error: "Failed to create a new note",
+    });
+  };
+
+  const handleDelete = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
+    if (!id) return;
+
+    const promise = deleteNote({ id });
+    toast.promise(promise, {
+      loading: "Deleting note...",
+      success: "Note deleted successfully",
+      error: "Failed to delete note",
+    });
+  };
+
+  const handleArchive = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
+    if (!id) return;
+
+    const promise = archiveNote({ id });
+
+    toast.promise(promise, {
+      loading: "Moving to trash...",
+      success: "Note moved to trash successfully",
+      error: "Failed to archive note!",
     });
   };
 
@@ -98,6 +139,35 @@ const SidebarItem = ({
       )}
       {!!id && (
         <div className="ml-auto flex items-center gap-x-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <div
+                role="button"
+                className="opacity-0 group-hover:opacity-100 h-full ml-auto rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600"
+              >
+                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-60"
+              side="right"
+              align="start"
+              forceMount
+            >
+              <DropdownMenuItem onClick={handleDelete}>
+                <Trash className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleArchive}>
+                <Archive className="h-4 w-4 mr-2" />
+                Archive
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <div className="text-xs text-muted-foreground p-2">
+                Last edited by: {user?.fullName}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div
             className="opacity-0 group-hover/sidebar:opacity-100 h-full ml-auto rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600"
             role="button"
