@@ -1,6 +1,14 @@
 "use client";
 
-import { ChevronsLeft, MenuIcon, PlusCircle, SearchIcon, Settings } from "lucide-react";
+import {
+  ChevronsLeft,
+  MenuIcon,
+  Plus,
+  PlusCircle,
+  SearchIcon,
+  Settings,
+  Trash,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ComponentRef, useRef, useEffect, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
@@ -11,6 +19,12 @@ import { api } from "@/convex/_generated/api";
 import SidebarItem from "./sidebar-item";
 import { toast } from "sonner";
 import { NotesList } from "./notes-list";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import TrashBox from "./trash-box";
 
 const Navigation = () => {
   const pathname = usePathname();
@@ -141,11 +155,7 @@ const Navigation = () => {
             label="Search"
             isSearch={true}
           />
-          <SidebarItem
-            onClick={() => {}}
-            icon={Settings}
-            label="Settings"
-          />
+          <SidebarItem onClick={() => {}} icon={Settings} label="Settings" />
           <SidebarItem
             onClick={handleCreateNewNote}
             icon={PlusCircle}
@@ -154,6 +164,22 @@ const Navigation = () => {
         </div>
         <div className="mt-4">
           <NotesList />
+          <SidebarItem
+            onClick={handleCreateNewNote}
+            icon={Plus}
+            label="Add a new page"
+          />
+          <Popover>
+            <PopoverTrigger className="w-full mt-4">
+              <SidebarItem onClick={() => {}} label="Trash" icon={Trash} />
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-72 p-0"
+              side={isMobile ? "bottom" : "right"}
+            >
+              <TrashBox />
+            </PopoverContent>
+          </Popover>
         </div>
         <div
           className="opacity-0 group-hover/sidebar:opacity-100 transition cursor-ew-resize absolute h-full w-1 bg-primary/10 right-0 top-0"
