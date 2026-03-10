@@ -26,9 +26,11 @@ import {
 } from "@/components/ui/popover";
 import TrashBox from "./trash-box";
 import { useSearch } from "@/hooks/use-search";
+import { useSettings } from "@/hooks/use-settings";
 
 const Navigation = () => {
   const search = useSearch();
+  const settings = useSettings();
   const pathname = usePathname();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const createNewNote = useMutation(api.notes.createNewNote);
@@ -157,7 +159,11 @@ const Navigation = () => {
             label="Search"
             isSearch={true}
           />
-          <SidebarItem onClick={() => {}} icon={Settings} label="Settings" />
+          <SidebarItem
+            onClick={settings.onOpen}
+            icon={Settings}
+            label="Settings"
+          />
           <SidebarItem
             onClick={handleCreateNewNote}
             icon={PlusCircle}
