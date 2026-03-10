@@ -38,7 +38,7 @@ const Navbar = () => {
         {isAuthenticated && !isLoading && (
           <>
             <Button variant="ghost" size="sm">
-              <Link href="/documents">Enter Lotion</Link>
+              <Link href="/notes">Enter Lotion</Link>
             </Button>
             <UserButton />
           </>
