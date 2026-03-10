@@ -14,7 +14,7 @@ export const createNewNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Unauthorized");
+      throw new Error("Not authenticated");
     }
 
     const userId = identity.subject;
@@ -36,7 +36,7 @@ export const getNotes = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Unauthorized");
+      throw new Error("Not authenticated");
     }
 
     const notes = await ctx.db.query("notes").collect();
@@ -53,7 +53,7 @@ export const getSidebar = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Unauthorized");
+      throw new Error("Not authenticated");
     }
 
     const userId = identity.subject;
@@ -76,7 +76,7 @@ export const getSearch = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Unauthorized");
+      throw new Error("Not authenticated");
     }
 
     const userId = identity.subject;
@@ -92,13 +92,44 @@ export const getSearch = query({
   },
 });
 
+export const getNoteById = query({
+  args: {
+    id: v.id("notes"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    const note = await ctx.db.get(args.id);
+
+    if (!note) {
+      throw new Error("Note not found");
+    }
+
+    if (note.isPublished && !note.isArchived) {
+      return note;
+    }
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = identity.subject;
+
+    if (note.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    return note;
+  },
+});
+
 export const archiveNote = mutation({
   args: { id: v.id("notes") },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Unauthorized");
+      throw new Error("Not authenticated");
     }
 
     const userId = identity.subject;
@@ -145,7 +176,7 @@ export const restoreNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Unauthorized");
+      throw new Error("Not authenticated");
     }
 
     const userId = identity.subject;
@@ -200,7 +231,7 @@ export const deleteNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Unauthorized");
+      throw new Error("Not authenticated");
     }
 
     const userId = identity.subject;
@@ -225,7 +256,7 @@ export const getTrash = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Unauthorized");
+      throw new Error("Not authenticated");
     }
 
     const userId = identity.subject;
@@ -237,5 +268,39 @@ export const getTrash = query({
       .collect();
 
     return notesInTrash;
+  },
+});
+
+export const updateNote = mutation({
+  args: {
+    id: v.id("notes"),
+    title: v.optional(v.string()),
+    content: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    icon: v.optional(v.string()),
+    isPublished: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = identity.subject;
+    const { id, ...rest } = args;
+
+    const note = await ctx.db.get(id);
+    if (!note) {
+      throw new Error("Note not found");
+    }
+
+    if (note.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    const updatedNote = await ctx.db.patch(id, rest);
+
+    return updatedNote;
   },
 });
