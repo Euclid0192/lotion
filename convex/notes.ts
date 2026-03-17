@@ -304,3 +304,29 @@ export const updateNote = mutation({
     return updatedNote;
   },
 });
+
+export const removeIcon = mutation({
+  args: { id: v.id("notes") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const userId = identity.subject;
+
+    const note = await ctx.db.get(args.id);
+    if (!note) {
+      throw new Error("Note not found");
+    }
+
+    if (note.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    const updatedNote = await ctx.db.patch(args.id, { icon: undefined });
+
+    return updatedNote;
+  },
+});

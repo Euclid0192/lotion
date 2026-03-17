@@ -18,6 +18,7 @@ const Title = ({ initialData }: TitleProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const enableInput = () => {
+    setTitle(initialData.title);
     setIsEditing(true);
     setTimeout(() => {
       inputRef.current?.focus();
