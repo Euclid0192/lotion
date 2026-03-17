@@ -1,9 +1,33 @@
-import React from 'react'
+"use client";
 
-const DocumentIdPage = () => {
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import ToolBar from "@/components/toolbar";
+import { useParams } from "next/navigation";
+
+const NoteIdPage = () => {
+  const params = useParams();
+  const note = useQuery(api.notes.getNoteById, {
+    id: params.noteId as Id<"notes">,
+  });
+
+  if (note === undefined) {
+    return <div>Loading...</div>;
+  }
+
+  if (note === null) {
+    return <div>Note not found</div>;
+  }
+
   return (
-    <div>DocumentIdPage</div>
-  )
-}
+    <div className="pb-40">
+      <div className="h-[35vh]"></div>
+      <div className="md:max-w-3xl lg:max-w-4xl mx-auto">
+        <ToolBar initialData={note} />
+      </div>
+    </div>
+  );
+};
 
-export default DocumentIdPage
+export default NoteIdPage;
