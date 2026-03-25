@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 interface ItemProps {
   id?: Id<"notes">;
@@ -52,6 +53,7 @@ const SidebarItem = ({
   const { user } = useUser();
   const archiveNote = useMutation(api.notes.archiveNote);
   const deleteNote = useMutation(api.notes.deleteNote);
+  const router = useRouter();
 
   const handleExpand = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.stopPropagation();
@@ -72,7 +74,7 @@ const SidebarItem = ({
         onExpand?.();
       }
 
-      // router.push(`/notes/${noteId}`);
+      router.push(`/notes/${noteId}`);
     });
 
     toast.promise(promise, {
@@ -86,7 +88,10 @@ const SidebarItem = ({
     e.stopPropagation();
     if (!id) return;
 
-    const promise = deleteNote({ id });
+    const promise = deleteNote({ id }).then(() => {
+      router.push("/notes");
+    });
+
     toast.promise(promise, {
       loading: "Deleting note...",
       success: "Note deleted successfully",
@@ -98,7 +103,9 @@ const SidebarItem = ({
     e.stopPropagation();
     if (!id) return;
 
-    const promise = archiveNote({ id });
+    const promise = archiveNote({ id }).then(() => {
+      router.push("/notes");
+    });
 
     toast.promise(promise, {
       loading: "Moving to trash...",

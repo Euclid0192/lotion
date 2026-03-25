@@ -7,9 +7,15 @@ import ToolBar from "@/components/toolbar";
 import { useParams } from "next/navigation";
 import CoverImage from "@/components/cover";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Editor } from "@/components/editor";
+import dynamic from "next/dynamic";
+import { useMemo } from "react";
 
 const NoteIdPage = () => {
+  /// Making sure Editor is not rendered on server side. Recommended for BlockNote
+  const Editor = useMemo(
+    () => dynamic(() => import("@/components/editor"), { ssr: false }),
+    [],
+  );
   const params = useParams();
   const note = useQuery(api.notes.getNoteById, {
     id: params.noteId as Id<"notes">,
