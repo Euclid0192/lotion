@@ -7,15 +7,19 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const DocumentsPage = () => {
   const { user } = useUser();
+  const router = useRouter();
 
   const createNewNote = useMutation(api.notes.createNewNote);
 
   const onCreate = () => {
     const promise = createNewNote({
       title: "Untitled",
+    }).then((noteId) => {
+      router.push(`/notes/${noteId}`);
     });
 
     toast.promise(promise, {
@@ -23,7 +27,7 @@ const DocumentsPage = () => {
       success: "New document created!",
       error: "Failed to create new note.",
     });
-  }
+  };
 
   return (
     <div className="h-full flex flex-col items-center justify-center space-y-4">

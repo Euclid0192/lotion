@@ -245,7 +245,25 @@ export const deleteNote = mutation({
       throw new Error("Unauthorized");
     }
 
-    const deletedNote = await ctx.db.delete(args.id);
+    const recursiveDeleteNotes = async (noteId: Id<"notes">) => {
+      // TODO: Wrap inside a transaction?
+      const deletedNote = await ctx.db.delete(noteId);
+
+      const children = await ctx.db
+        .query("notes")
+        .withIndex("by_user_parent", (q) =>
+          q.eq("userId", userId).eq("parentNote", noteId),
+        )
+        .collect();
+
+      for (const child of children) {
+        await recursiveDeleteNotes(child._id);
+      }
+
+      return deletedNote;
+    };
+
+    const deletedNote = await recursiveDeleteNotes(args.id);
 
     return deletedNote;
   },
