@@ -1,18 +1,27 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import ToolBar from "@/components/toolbar";
 import { useParams } from "next/navigation";
 import CoverImage from "@/components/cover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Editor } from "@/components/editor";
 
 const NoteIdPage = () => {
   const params = useParams();
   const note = useQuery(api.notes.getNoteById, {
     id: params.noteId as Id<"notes">,
   });
+  const updateNote = useMutation(api.notes.updateNote);
+
+  const onContentChange = (content: string) => {
+    updateNote({
+      id: params.noteId as Id<"notes">,
+      content,
+    });
+  };
 
   if (note === undefined) {
     return (
@@ -37,6 +46,7 @@ const NoteIdPage = () => {
       <CoverImage url={note.coverImage} />
       <div className="md:max-w-3xl lg:max-w-4xl mx-auto">
         <ToolBar initialData={note} />
+        <Editor onChange={onContentChange} initialContent={note.content} />
       </div>
     </div>
   );
