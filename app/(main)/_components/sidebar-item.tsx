@@ -88,30 +88,30 @@ const SidebarItem = ({
     e.stopPropagation();
     if (!id) return;
 
-    const promise = deleteNote({ id }).then(() => {
-      router.push("/notes");
-    });
+    const promise = deleteNote({ id })
 
     toast.promise(promise, {
       loading: "Deleting note...",
       success: "Note deleted successfully",
       error: "Failed to delete note",
     });
+
+    router.push("/notes");
   };
 
   const handleArchive = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.stopPropagation();
     if (!id) return;
 
-    const promise = archiveNote({ id }).then(() => {
-      router.push("/notes");
-    });
+    const promise = archiveNote({ id })
 
     toast.promise(promise, {
       loading: "Moving to trash...",
       success: "Note moved to trash successfully",
       error: "Failed to archive note!",
     });
+
+    router.push("/notes");
   };
 
   return (
