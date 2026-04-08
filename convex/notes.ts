@@ -2,7 +2,11 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Doc, Id } from "./_generated/dataModel";
 
-// TODO: Add centralized error class and handling
+import {
+  AuthenticationError,
+  AuthorizationError,
+  NotFoundError,
+} from "./application_errors";
 
 export const createNewNote = mutation({
   args: {
@@ -14,7 +18,9 @@ export const createNewNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
@@ -36,7 +42,9 @@ export const getNotes = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const notes = await ctx.db.query("notes").collect();
@@ -53,7 +61,9 @@ export const getSidebar = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
@@ -76,7 +86,9 @@ export const getSearch = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
@@ -102,7 +114,10 @@ export const getNoteById = query({
     const note = await ctx.db.get(args.id);
 
     if (!note) {
-      throw new Error("Note not found");
+      throw new NotFoundError(
+        "The note you're looking for might have been deleted.",
+        { noteId: args.id },
+      );
     }
 
     if (note.isPublished && !note.isArchived) {
@@ -110,13 +125,18 @@ export const getNoteById = query({
     }
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
 
     if (note.userId !== userId) {
-      throw new Error("Unauthorized");
+      throw new AuthorizationError(
+        "You don't have permission to access this note.",
+        { noteId: args.id, userId: note.userId },
+      );
     }
 
     return note;
@@ -129,7 +149,9 @@ export const archiveNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
@@ -137,11 +159,17 @@ export const archiveNote = mutation({
     const note = await ctx.db.get(args.id);
 
     if (!note) {
-      throw new Error("Note not found");
+      throw new NotFoundError(
+        "The note you're looking for might have been deleted.",
+        { noteId: args.id },
+      );
     }
 
     if (note.userId !== userId) {
-      throw new Error("Unauthorized");
+      throw new AuthorizationError(
+        "You don't have permission to access this note.",
+        { noteId: args.id, userId: note.userId },
+      );
     }
 
     const recursiveArchiveNotes = async (noteId: Id<"notes">) => {
@@ -176,18 +204,26 @@ export const restoreNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
     const existingNote = await ctx.db.get(args.id);
 
     if (!existingNote) {
-      throw new Error("Note not found");
+      throw new NotFoundError(
+        "The note you're looking for might have been deleted.",
+        { noteId: args.id },
+      );
     }
 
     if (existingNote.userId !== userId) {
-      throw new Error("Unauthorized");
+      throw new AuthorizationError(
+        "You don't have permission to access this note.",
+        { noteId: args.id, userId: existingNote.userId },
+      );
     }
 
     const recursiveRestoreNotes = async (noteId: Id<"notes">) => {
@@ -231,18 +267,26 @@ export const deleteNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
 
     const note = await ctx.db.get(args.id);
     if (!note) {
-      throw new Error("Note not found");
+      throw new NotFoundError(
+        "The note you're looking for might have been deleted.",
+        { noteId: args.id },
+      );
     }
 
     if (note.userId !== userId) {
-      throw new Error("Unauthorized");
+      throw new AuthorizationError(
+        "You don't have permission to access this note.",
+        { noteId: args.id, userId: note.userId },
+      );
     }
 
     const recursiveDeleteNotes = async (noteId: Id<"notes">) => {
@@ -274,7 +318,9 @@ export const getTrash = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
@@ -302,7 +348,9 @@ export const updateNote = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
@@ -310,11 +358,17 @@ export const updateNote = mutation({
 
     const note = await ctx.db.get(id);
     if (!note) {
-      throw new Error("Note not found");
+      throw new NotFoundError(
+        "The note you're looking for might have been deleted.",
+        { noteId: id },
+      );
     }
 
     if (note.userId !== userId) {
-      throw new Error("Unauthorized");
+      throw new AuthorizationError(
+        "You don't have permission to access this note.",
+        { noteId: id, userId: note.userId },
+      );
     }
 
     const updatedNote = await ctx.db.patch(id, rest);
@@ -329,18 +383,26 @@ export const removeIcon = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
 
     const note = await ctx.db.get(args.id);
     if (!note) {
-      throw new Error("Note not found");
+      throw new NotFoundError(
+        "The note you're looking for might have been deleted.",
+        { noteId: args.id },
+      );
     }
 
     if (note.userId !== userId) {
-      throw new Error("Unauthorized");
+      throw new AuthorizationError(
+        "You don't have permission to access this note.",
+        { noteId: args.id, userId: note.userId },
+      );
     }
 
     const updatedNote = await ctx.db.patch(args.id, { icon: undefined });
@@ -355,18 +417,26 @@ export const removeCoverImage = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new AuthenticationError(
+        "Unauthenticated. Please log in before continue.",
+      );
     }
 
     const userId = identity.subject;
 
     const note = await ctx.db.get(args.id);
     if (!note) {
-      throw new Error("Note not found");
+      throw new NotFoundError(
+        "The note you're looking for might have been deleted.",
+        { noteId: args.id },
+      );
     }
 
     if (note.userId !== userId) {
-      throw new Error("Unauthorized");
+      throw new AuthorizationError(
+        "You don't have permission to access this note.",
+        { noteId: args.id, userId: note.userId },
+      );
     }
 
     const updatedNote = await ctx.db.patch(args.id, { coverImage: undefined });

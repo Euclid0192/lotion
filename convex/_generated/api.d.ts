@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as application_errors from "../application_errors.js";
 import type * as notes from "../notes.js";
 
 import type {
@@ -17,6 +18,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  application_errors: typeof application_errors;
   notes: typeof notes;
 }>;
 
