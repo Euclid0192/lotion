@@ -14,4 +14,11 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_parent", ["userId", "parentNote"]),
+
+  blocks: defineTable({
+    title: v.string(),
+    userId: v.string(),
+    subtitle: v.optional(v.string()),
+    content: v.string(),
+  }).index("by_user", ["userId"]),
 });

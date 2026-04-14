@@ -7,6 +7,7 @@ import {
   AuthorizationError,
   NotFoundError,
 } from "./application_errors";
+import { requireAuth, requireOwnership } from "./auth";
 
 export const createNewNote = mutation({
   args: {
@@ -14,16 +15,7 @@ export const createNewNote = mutation({
     parentNote: v.optional(v.id("notes")),
   },
   handler: async (ctx, args) => {
-    // TODO: this identity is checked everywhere, create a helper/middleware later
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
+    const userId = await requireAuth(ctx);
 
     const note = await ctx.db.insert("notes", {
       title: args.title,
@@ -39,13 +31,7 @@ export const createNewNote = mutation({
 
 export const getNotes = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
+    const userId = await requireAuth(ctx);
 
     const notes = await ctx.db.query("notes").collect();
 
@@ -58,15 +44,7 @@ export const getSidebar = query({
     parentNote: v.optional(v.id("notes")),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
+    const userId = await requireAuth(ctx);
 
     const notes = await ctx.db
       .query("notes")
@@ -83,15 +61,7 @@ export const getSidebar = query({
 
 export const getSearch = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
+    const userId = await requireAuth(ctx);
 
     const notes = await ctx.db
       .query("notes")
@@ -109,7 +79,7 @@ export const getNoteById = query({
     id: v.id("notes"),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const userId = await requireAuth(ctx);
 
     const note = await ctx.db.get(args.id);
 
@@ -124,20 +94,7 @@ export const getNoteById = query({
       return note;
     }
 
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
-
-    if (note.userId !== userId) {
-      throw new AuthorizationError(
-        "You don't have permission to access this note.",
-        { noteId: args.id, userId: note.userId },
-      );
-    }
+    requireOwnership(ctx, "notes", note, userId);
 
     return note;
   },
@@ -146,15 +103,7 @@ export const getNoteById = query({
 export const archiveNote = mutation({
   args: { id: v.id("notes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
+    const userId = await requireAuth(ctx);
 
     const note = await ctx.db.get(args.id);
 
@@ -165,12 +114,7 @@ export const archiveNote = mutation({
       );
     }
 
-    if (note.userId !== userId) {
-      throw new AuthorizationError(
-        "You don't have permission to access this note.",
-        { noteId: args.id, userId: note.userId },
-      );
-    }
+    requireOwnership(ctx, "notes", note, userId);
 
     const recursiveArchiveNotes = async (noteId: Id<"notes">) => {
       // TODO: Wrap inside a transaction?
@@ -201,15 +145,8 @@ export const archiveNote = mutation({
 export const restoreNote = mutation({
   args: { id: v.id("notes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const userId = await requireAuth(ctx);
 
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
     const existingNote = await ctx.db.get(args.id);
 
     if (!existingNote) {
@@ -219,12 +156,7 @@ export const restoreNote = mutation({
       );
     }
 
-    if (existingNote.userId !== userId) {
-      throw new AuthorizationError(
-        "You don't have permission to access this note.",
-        { noteId: args.id, userId: existingNote.userId },
-      );
-    }
+    requireOwnership(ctx, "notes", existingNote, userId);
 
     const recursiveRestoreNotes = async (noteId: Id<"notes">) => {
       const childrenNotes = await ctx.db
@@ -264,15 +196,7 @@ export const restoreNote = mutation({
 export const deleteNote = mutation({
   args: { id: v.id("notes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
+    const userId = await requireAuth(ctx);
 
     const note = await ctx.db.get(args.id);
     if (!note) {
@@ -282,12 +206,7 @@ export const deleteNote = mutation({
       );
     }
 
-    if (note.userId !== userId) {
-      throw new AuthorizationError(
-        "You don't have permission to access this note.",
-        { noteId: args.id, userId: note.userId },
-      );
-    }
+    requireOwnership(ctx, "notes", note, userId);
 
     const recursiveDeleteNotes = async (noteId: Id<"notes">) => {
       // TODO: Wrap inside a transaction?
@@ -315,15 +234,7 @@ export const deleteNote = mutation({
 
 export const getTrash = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
+    const userId = await requireAuth(ctx);
 
     const notesInTrash = await ctx.db
       .query("notes")
@@ -345,15 +256,8 @@ export const updateNote = mutation({
     isPublished: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const userId = await requireAuth(ctx);
 
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
     const { id, ...rest } = args;
 
     const note = await ctx.db.get(id);
@@ -364,12 +268,7 @@ export const updateNote = mutation({
       );
     }
 
-    if (note.userId !== userId) {
-      throw new AuthorizationError(
-        "You don't have permission to access this note.",
-        { noteId: id, userId: note.userId },
-      );
-    }
+    requireOwnership(ctx, "notes", note, userId);
 
     const updatedNote = await ctx.db.patch(id, rest);
 
@@ -380,15 +279,7 @@ export const updateNote = mutation({
 export const removeIcon = mutation({
   args: { id: v.id("notes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
+    const userId = await requireAuth(ctx);
 
     const note = await ctx.db.get(args.id);
     if (!note) {
@@ -398,12 +289,7 @@ export const removeIcon = mutation({
       );
     }
 
-    if (note.userId !== userId) {
-      throw new AuthorizationError(
-        "You don't have permission to access this note.",
-        { noteId: args.id, userId: note.userId },
-      );
-    }
+    requireOwnership(ctx, "notes", note, userId);
 
     const updatedNote = await ctx.db.patch(args.id, { icon: undefined });
 
@@ -414,15 +300,7 @@ export const removeIcon = mutation({
 export const removeCoverImage = mutation({
   args: { id: v.id("notes") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-
-    if (!identity) {
-      throw new AuthenticationError(
-        "Unauthenticated. Please log in before continue.",
-      );
-    }
-
-    const userId = identity.subject;
+    const userId = await requireAuth(ctx);
 
     const note = await ctx.db.get(args.id);
     if (!note) {
@@ -432,12 +310,7 @@ export const removeCoverImage = mutation({
       );
     }
 
-    if (note.userId !== userId) {
-      throw new AuthorizationError(
-        "You don't have permission to access this note.",
-        { noteId: args.id, userId: note.userId },
-      );
-    }
+    requireOwnership(ctx, "notes", note, userId);
 
     const updatedNote = await ctx.db.patch(args.id, { coverImage: undefined });
 

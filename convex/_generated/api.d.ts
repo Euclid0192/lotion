@@ -9,6 +9,8 @@
  */
 
 import type * as application_errors from "../application_errors.js";
+import type * as auth from "../auth.js";
+import type * as blocks from "../blocks.js";
 import type * as notes from "../notes.js";
 
 import type {
@@ -19,6 +21,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   application_errors: typeof application_errors;
+  auth: typeof auth;
+  blocks: typeof blocks;
   notes: typeof notes;
 }>;
 
